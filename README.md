@@ -46,6 +46,25 @@ python app.py
 
 Never enable debug mode in production environments.
 
+### Running the Demo
+
+A demo script is provided to showcase the complete audit logging functionality:
+
+```bash
+# In one terminal, start the server
+python app.py
+
+# In another terminal, run the demo
+python demo.py
+```
+
+The demo will:
+1. Create a customer and show the audit log
+2. Update the customer and show before/after states
+3. Delete the customer
+4. Display the complete audit trail for compliance review
+
+
 ## API Endpoints
 
 ### Customer Management

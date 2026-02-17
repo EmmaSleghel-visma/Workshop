@@ -45,6 +45,9 @@ class AuditLogger:
         Returns:
             The created audit log entry
         """
+        # Ensure log file exists before writing
+        self._ensure_log_file_exists()
+        
         log_entry = {
             "timestamp": datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
             "action": action,
@@ -88,6 +91,9 @@ class AuditLogger:
         Returns:
             List of matching audit log entries
         """
+        # Ensure log file exists before reading
+        self._ensure_log_file_exists()
+        
         with open(self.log_file, 'r') as f:
             logs = json.load(f)
         
