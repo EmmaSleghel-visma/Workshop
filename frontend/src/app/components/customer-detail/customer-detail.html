@@ -1,0 +1,146 @@
+<div class="detail-container">
+  <div *ngIf="loading" class="loading">
+    Loading customer details...
+  </div>
+
+  <div *ngIf="error" class="error">
+    {{ error }}
+    <button class="btn-primary" (click)="goBack()">Back to List</button>
+  </div>
+
+  <div *ngIf="!loading && !error && customer" class="detail-content">
+    <div class="header">
+      <button class="btn-back" (click)="goBack()">← Back to List</button>
+      <h1>Customer Details</h1>
+    </div>
+
+    <div class="detail-grid">
+      <!-- Customer Info Card -->
+      <div class="card">
+        <div class="card-header">
+          <h2>Customer Information</h2>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="label">Full Name:</span>
+            <span class="value">{{ customer.fullName }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Email:</span>
+            <span class="value">{{ customer.email }}</span>
+          </div>
+          <div class="info-row" *ngIf="customer.phoneNumber">
+            <span class="label">Phone:</span>
+            <span class="value">{{ customer.phoneNumber }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Company:</span>
+            <span class="value">{{ customer.companyName }}</span>
+          </div>
+          <div class="info-row" *ngIf="customer.businessNumber">
+            <span class="label">Business Number:</span>
+            <span class="value">{{ customer.businessNumber }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Country:</span>
+            <span class="value">{{ customer.country }}</span>
+          </div>
+          <div class="info-row" *ngIf="customer.address">
+            <span class="label">Address:</span>
+            <span class="value">{{ customer.address }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Created:</span>
+            <span class="value">{{ customer.createdAt | date:'medium' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- KYC Status Card -->
+      <div class="card">
+        <div class="card-header">
+          <h2>KYC Status</h2>
+        </div>
+        <div class="card-body">
+          <div class="status-section">
+            <div class="current-status">
+              <span class="status-badge" [ngClass]="getStatusClass(customer.kycStatus)">
+                {{ kycStatusLabels[customer.kycStatus] }}
+              </span>
+            </div>
+            <div class="status-actions">
+              <label>Update Status:</label>
+              <select (change)="updateKycStatus(+$event.target.value)" [value]="customer.kycStatus">
+                <option *ngFor="let status of kycStatuses" [value]="status.value">
+                  {{ status.label }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Risk Assessment Card -->
+      <div class="card">
+        <div class="card-header">
+          <h2>Risk Assessment</h2>
+        </div>
+        <div class="card-body">
+          <div class="status-section">
+            <div class="current-status">
+              <span class="risk-badge" [ngClass]="getRiskClass(customer.riskLevel)">
+                {{ riskLevelLabels[customer.riskLevel] }}
+              </span>
+            </div>
+            <div class="status-actions">
+              <label>Update Risk Level:</label>
+              <select (change)="updateRiskLevel(+$event.target.value)" [value]="customer.riskLevel">
+                <option *ngFor="let level of riskLevels" [value]="level.value">
+                  {{ level.label }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Compliance Checks Card -->
+      <div class="card full-width">
+        <div class="card-header">
+          <h2>Compliance Checks</h2>
+          <button class="btn-small" (click)="addComplianceCheck('Manual Review')">
+            + Add Check
+          </button>
+        </div>
+        <div class="card-body">
+          <div *ngIf="customer.complianceChecks.length === 0" class="no-checks">
+            No compliance checks yet. Add a check to get started.
+          </div>
+          
+          <table class="checks-table" *ngIf="customer.complianceChecks.length > 0">
+            <thead>
+              <tr>
+                <th>Check Type</th>
+                <th>Status</th>
+                <th>Notes</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let check of customer.complianceChecks">
+                <td>{{ check.checkType }}</td>
+                <td>
+                  <span class="check-badge" [ngClass]="getCheckStatusClass(check.status)">
+                    {{ checkStatusLabels[check.status] }}
+                  </span>
+                </td>
+                <td>{{ check.notes || '-' }}</td>
+                <td>{{ check.checkedAt | date:'short' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
