@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using CreditroDemo.API.Models;
 
 namespace CreditroDemo.API.Services;
@@ -14,7 +15,7 @@ public interface ICustomerService
 
 public class CustomerService : ICustomerService
 {
-    private readonly List<Customer> _customers = new();
+    private readonly ConcurrentBag<Customer> _customers = new();
 
     public CustomerService()
     {
@@ -112,7 +113,10 @@ public class CustomerService : ICustomerService
             ComplianceChecks = new List<ComplianceCheck>()
         };
 
-        _customers.AddRange(new[] { customer1, customer2, customer3 });
+        foreach (var customer in new[] { customer1, customer2, customer3 })
+        {
+            _customers.Add(customer);
+        }
     }
 
     public Task<List<Customer>> GetAllCustomersAsync()
