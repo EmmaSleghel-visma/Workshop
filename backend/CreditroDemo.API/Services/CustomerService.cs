@@ -1,24 +1,27 @@
 using System.Collections.Concurrent;
 using CreditroDemo.API.Models;
+using Microsoft.Extensions.Logging;
 
 namespace CreditroDemo.API.Services;
 
 public interface ICustomerService
 {
-    Task<List<Customer>> GetAllCustomersAsync();
-    Task<Customer?> GetCustomerByIdAsync(Guid id);
-    Task<Customer> CreateCustomerAsync(CreateCustomerRequest request);
-    Task<Customer?> UpdateCustomerKycStatusAsync(Guid id, KycStatus status);
-    Task<Customer?> UpdateCustomerRiskLevelAsync(Guid id, RiskLevel riskLevel);
-    Task<Customer?> AddComplianceCheckAsync(Guid customerId, ComplianceCheck check);
+    Task<List<Customer>> GetAllCustomersAsync(CancellationToken cancellationToken);
+    Task<Customer?> GetCustomerByIdAsync(Guid id, CancellationToken cancellationToken);
+    Task<Customer> CreateCustomerAsync(CreateCustomerRequest request, CancellationToken cancellationToken);
+    Task<Customer?> UpdateCustomerKycStatusAsync(Guid id, KycStatus status, CancellationToken cancellationToken);
+    Task<Customer?> UpdateCustomerRiskLevelAsync(Guid id, RiskLevel riskLevel, CancellationToken cancellationToken);
+    Task<Customer?> AddComplianceCheckAsync(Guid customerId, AddComplianceCheckRequest request, CancellationToken cancellationToken);
 }
 
 public class CustomerService : ICustomerService
 {
-    private readonly ConcurrentBag<Customer> _customers = new();
+    private readonly ConcurrentDictionary<Guid, Customer> _customers = new();
+    private readonly ILogger<CustomerService> _logger;
 
-    public CustomerService()
+    public CustomerService(ILogger<CustomerService> logger)
     {
+        _logger = logger;
         // Seed with some demo data
         SeedDemoData();
     }
@@ -115,73 +118,171 @@ public class CustomerService : ICustomerService
 
         foreach (var customer in new[] { customer1, customer2, customer3 })
         {
-            _customers.Add(customer);
+            _customers.TryAdd(customer.Id, customer);
         }
     }
 
-    public Task<List<Customer>> GetAllCustomersAsync()
+    /// <summary>
+    /// Returns all customers ordered by creation date descending.
+    /// </summary>
+    public Task<List<Customer>> GetAllCustomersAsync(CancellationToken cancellationToken)
     {
-        return Task.FromResult(_customers.OrderByDescending(c => c.CreatedAt).ToList());
-    }
-
-    public Task<Customer?> GetCustomerByIdAsync(Guid id)
-    {
-        var customer = _customers.FirstOrDefault(c => c.Id == id);
-        return Task.FromResult(customer);
-    }
-
-    public Task<Customer> CreateCustomerAsync(CreateCustomerRequest request)
-    {
-        var customer = new Customer
+        try
         {
-            Id = Guid.NewGuid(),
-            FullName = request.FullName,
-            Email = request.Email,
-            PhoneNumber = request.PhoneNumber,
-            CompanyName = request.CompanyName,
-            BusinessNumber = request.BusinessNumber,
-            Country = request.Country,
-            Address = request.Address,
-            CreatedAt = DateTime.UtcNow,
-            KycStatus = KycStatus.Pending,
-            RiskLevel = RiskLevel.Medium,
-            ComplianceChecks = new List<ComplianceCheck>()
-        };
+            cancellationToken.ThrowIfCancellationRequested();
+            var customers = _customers.Values
+                .OrderByDescending(c => c.CreatedAt)
+                .ToList();
 
-        _customers.Add(customer);
-        return Task.FromResult(customer);
+            return Task.FromResult(customers);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error while retrieving customers.");
+            throw;
+        }
     }
 
-    public Task<Customer?> UpdateCustomerKycStatusAsync(Guid id, KycStatus status)
+    /// <summary>
+    /// Returns a customer by identifier.
+    /// </summary>
+    public Task<Customer?> GetCustomerByIdAsync(Guid id, CancellationToken cancellationToken)
     {
-        var customer = _customers.FirstOrDefault(c => c.Id == id);
-        if (customer != null)
+        try
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            _customers.TryGetValue(id, out var customer);
+            return Task.FromResult(customer);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error while retrieving customer {CustomerId}.", id);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Creates a new customer.
+    /// </summary>
+    public Task<Customer> CreateCustomerAsync(CreateCustomerRequest request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var customer = new Customer
+            {
+                Id = Guid.NewGuid(),
+                FullName = request.FullName,
+                Email = request.Email,
+                PhoneNumber = request.PhoneNumber,
+                CompanyName = request.CompanyName,
+                BusinessNumber = request.BusinessNumber,
+                Country = request.Country,
+                Address = request.Address,
+                CreatedAt = DateTime.UtcNow,
+                KycStatus = KycStatus.Pending,
+                RiskLevel = RiskLevel.Medium,
+                ComplianceChecks = new List<ComplianceCheck>()
+            };
+
+            _customers.TryAdd(customer.Id, customer);
+            _logger.LogInformation("Created customer {CustomerId} with email {Email}", customer.Id, customer.Email);
+            return Task.FromResult(customer);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error while creating customer {Email}.", request.Email);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Updates customer KYC status.
+    /// </summary>
+    public Task<Customer?> UpdateCustomerKycStatusAsync(Guid id, KycStatus status, CancellationToken cancellationToken)
+    {
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (!_customers.TryGetValue(id, out var customer))
+            {
+                return Task.FromResult<Customer?>(null);
+            }
+
             customer.KycStatus = status;
+            _logger.LogInformation("Updated KYC status for customer {CustomerId} to {Status}", id, status);
+            return Task.FromResult<Customer?>(customer);
         }
-        return Task.FromResult(customer);
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error while updating KYC status for customer {CustomerId}.", id);
+            throw;
+        }
     }
 
-    public Task<Customer?> UpdateCustomerRiskLevelAsync(Guid id, RiskLevel riskLevel)
+    /// <summary>
+    /// Updates customer risk level.
+    /// </summary>
+    public Task<Customer?> UpdateCustomerRiskLevelAsync(Guid id, RiskLevel riskLevel, CancellationToken cancellationToken)
     {
-        var customer = _customers.FirstOrDefault(c => c.Id == id);
-        if (customer != null)
+        try
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (!_customers.TryGetValue(id, out var customer))
+            {
+                return Task.FromResult<Customer?>(null);
+            }
+
             customer.RiskLevel = riskLevel;
+            _logger.LogInformation("Updated risk level for customer {CustomerId} to {RiskLevel}", id, riskLevel);
+            return Task.FromResult<Customer?>(customer);
         }
-        return Task.FromResult(customer);
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error while updating risk level for customer {CustomerId}.", id);
+            throw;
+        }
     }
 
-    public Task<Customer?> AddComplianceCheckAsync(Guid customerId, ComplianceCheck check)
+    /// <summary>
+    /// Adds a compliance check for a customer.
+    /// </summary>
+    public Task<Customer?> AddComplianceCheckAsync(Guid customerId, AddComplianceCheckRequest request, CancellationToken cancellationToken)
     {
-        var customer = _customers.FirstOrDefault(c => c.Id == customerId);
-        if (customer != null)
+        try
         {
-            check.Id = Guid.NewGuid();
-            check.CustomerId = customerId;
-            check.CheckedAt = DateTime.UtcNow;
-            customer.ComplianceChecks.Add(check);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (!_customers.TryGetValue(customerId, out var customer))
+            {
+                return Task.FromResult<Customer?>(null);
+            }
+
+            var check = new ComplianceCheck
+            {
+                Id = Guid.NewGuid(),
+                CustomerId = customerId,
+                CheckType = request.CheckType,
+                Status = request.Status,
+                Notes = request.Notes,
+                CheckedAt = DateTime.UtcNow
+            };
+
+            lock (customer.ComplianceChecks)
+            {
+                customer.ComplianceChecks.Add(check);
+            }
+
+            _logger.LogInformation("Added compliance check {CheckType} for customer {CustomerId}", request.CheckType, customerId);
+            return Task.FromResult<Customer?>(customer);
         }
-        return Task.FromResult(customer);
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error while adding compliance check for customer {CustomerId}.", customerId);
+            throw;
+        }
     }
 }
