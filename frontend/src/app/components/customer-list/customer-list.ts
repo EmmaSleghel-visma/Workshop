@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { CustomerService } from '../../services/customer.service';
@@ -17,7 +17,10 @@ export class CustomerList implements OnInit {
   kycStatusLabels = KycStatusLabels;
   riskLevelLabels = RiskLevelLabels;
 
-  constructor(private customerService: CustomerService) {}
+  constructor(
+    private customerService: CustomerService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
     this.loadCustomers();
@@ -30,10 +33,12 @@ export class CustomerList implements OnInit {
       next: (customers) => {
         this.customers = customers;
         this.loading = false;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         this.error = 'Failed to load customers. Please ensure the API is running.';
         this.loading = false;
+        this.cdr.detectChanges();
         console.error('Error loading customers:', err);
       }
     });

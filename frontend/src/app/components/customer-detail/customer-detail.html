@@ -70,7 +70,7 @@
             </div>
             <div class="status-actions">
               <label>Update Status:</label>
-              <select (change)="updateKycStatus(+$event.target.value)" [value]="customer.kycStatus">
+              <select (change)="updateKycStatus(+$any($event.target).value)" [value]="customer.kycStatus">
                 <option *ngFor="let status of kycStatuses" [value]="status.value">
                   {{ status.label }}
                 </option>
@@ -94,7 +94,7 @@
             </div>
             <div class="status-actions">
               <label>Update Risk Level:</label>
-              <select (change)="updateRiskLevel(+$event.target.value)" [value]="customer.riskLevel">
+              <select (change)="updateRiskLevel(+$any($event.target).value)" [value]="customer.riskLevel">
                 <option *ngFor="let level of riskLevels" [value]="level.value">
                   {{ level.label }}
                 </option>

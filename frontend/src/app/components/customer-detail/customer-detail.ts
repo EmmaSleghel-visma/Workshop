@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CustomerService } from '../../services/customer.service';
@@ -32,7 +32,8 @@ export class CustomerDetail implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private customerService: CustomerService
+    private customerService: CustomerService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -49,10 +50,12 @@ export class CustomerDetail implements OnInit {
       next: (customer) => {
         this.customer = customer;
         this.loading = false;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         this.error = 'Failed to load customer details.';
         this.loading = false;
+        this.cdr.detectChanges();
         console.error('Error loading customer:', err);
       }
     });
@@ -64,6 +67,7 @@ export class CustomerDetail implements OnInit {
     this.customerService.updateKycStatus(this.customer.id, status as KycStatus).subscribe({
       next: (updated) => {
         this.customer = updated;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Error updating KYC status:', err);
@@ -78,6 +82,7 @@ export class CustomerDetail implements OnInit {
     this.customerService.updateRiskLevel(this.customer.id, riskLevel as RiskLevel).subscribe({
       next: (updated) => {
         this.customer = updated;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Error updating risk level:', err);
@@ -98,6 +103,7 @@ export class CustomerDetail implements OnInit {
     this.customerService.addComplianceCheck(this.customer.id, check).subscribe({
       next: (updated) => {
         this.customer = updated;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Error adding compliance check:', err);
