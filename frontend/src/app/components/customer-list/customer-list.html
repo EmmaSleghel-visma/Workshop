@@ -1,0 +1,59 @@
+<div class="customer-list-container">
+  <div class="header">
+    <h1>KYC Customer Management</h1>
+    <button class="btn-primary" routerLink="/new-customer">
+      + Add New Customer
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="loading">
+    Loading customers...
+  </div>
+
+  <div *ngIf="error" class="error">
+    {{ error }}
+  </div>
+
+  <div *ngIf="!loading && !error" class="customers-grid">
+    <table class="customers-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Company</th>
+          <th>Country</th>
+          <th>KYC Status</th>
+          <th>Risk Level</th>
+          <th>Created</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let customer of customers">
+          <td>{{ customer.fullName }}</td>
+          <td>{{ customer.companyName }}</td>
+          <td>{{ customer.country }}</td>
+          <td>
+            <span class="status-badge" [ngClass]="getStatusClass(customer.kycStatus)">
+              {{ kycStatusLabels[customer.kycStatus] }}
+            </span>
+          </td>
+          <td>
+            <span class="risk-badge" [ngClass]="getRiskClass(customer.riskLevel)">
+              {{ riskLevelLabels[customer.riskLevel] }}
+            </span>
+          </td>
+          <td>{{ customer.createdAt | date:'short' }}</td>
+          <td>
+            <button class="btn-small" [routerLink]="['/customer', customer.id]">
+              View Details
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="customers.length === 0" class="no-customers">
+      No customers found. Add your first customer to get started!
+    </div>
+  </div>
+</div>
