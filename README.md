@@ -38,6 +38,14 @@ python app.py
 
 The API will be available at `http://localhost:5000`
 
+**Security Note**: By default, the application runs with debug mode disabled for security. To enable debug mode in development only, set the environment variable:
+```bash
+export FLASK_DEBUG=true
+python app.py
+```
+
+Never enable debug mode in production environments.
+
 ## API Endpoints
 
 ### Customer Management
