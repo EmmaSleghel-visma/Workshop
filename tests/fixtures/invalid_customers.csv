@@ -1,0 +1,6 @@
+name,email,country
+Valid User,valid@example.com,US
+,missing.name@example.com,GB
+No Email User,,US
+Invalid Email,not-an-email,DE
+Bad Country,user@example.com,INVALID

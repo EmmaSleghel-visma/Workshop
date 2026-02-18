@@ -1,0 +1,4 @@
+name,email,country
+User1,user1@example.com,US
+User2,user2@example.com,GB
+User1 Duplicate,user1@example.com,CA
