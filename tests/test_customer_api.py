@@ -13,7 +13,7 @@ FIXTURES_DIR = TEST_DIR / 'fixtures'
 @pytest.fixture
 def client():
     """Create test client with in-memory database."""
-    app.config['TESTING'] = True
+    app.config['TESTING'] = False
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
     
     with app.test_client() as client:
