@@ -1,8 +1,13 @@
 """Integration tests for customer management API."""
 import os
 import io
+from pathlib import Path
 import pytest
 from app import app, db, Customer
+
+# Get the directory containing this test file
+TEST_DIR = Path(__file__).parent
+FIXTURES_DIR = TEST_DIR / 'fixtures'
 
 
 @pytest.fixture
@@ -147,7 +152,7 @@ class TestBulkImport:
     
     def test_bulk_import_with_fixture(self, client):
         """Test bulk import using valid_customers.csv fixture."""
-        fixture_path = '/home/runner/work/Workshop/Workshop/tests/fixtures/valid_customers.csv'
+        fixture_path = FIXTURES_DIR / 'valid_customers.csv'
         
         with open(fixture_path, 'rb') as f:
             response = client.post(
@@ -164,7 +169,7 @@ class TestBulkImport:
     
     def test_bulk_import_invalid_rows(self, client):
         """Test bulk import with some invalid rows."""
-        fixture_path = '/home/runner/work/Workshop/Workshop/tests/fixtures/invalid_customers.csv'
+        fixture_path = FIXTURES_DIR / 'invalid_customers.csv'
         
         with open(fixture_path, 'rb') as f:
             response = client.post(
@@ -186,7 +191,7 @@ class TestBulkImport:
     
     def test_bulk_import_duplicate_email(self, client):
         """Test bulk import with duplicate email addresses."""
-        fixture_path = '/home/runner/work/Workshop/Workshop/tests/fixtures/duplicate_email.csv'
+        fixture_path = FIXTURES_DIR / 'duplicate_email.csv'
         
         with open(fixture_path, 'rb') as f:
             response = client.post(

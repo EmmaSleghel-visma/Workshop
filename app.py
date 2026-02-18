@@ -254,7 +254,6 @@ def bulk_import_customers():
             if not name:
                 failed_rows.append({
                     'line': line_num,
-                    'data': row,
                     'reason': 'Missing required field: name'
                 })
                 continue
@@ -262,7 +261,6 @@ def bulk_import_customers():
             if not email:
                 failed_rows.append({
                     'line': line_num,
-                    'data': row,
                     'reason': 'Missing required field: email'
                 })
                 continue
@@ -270,7 +268,6 @@ def bulk_import_customers():
             if not country:
                 failed_rows.append({
                     'line': line_num,
-                    'data': row,
                     'reason': 'Missing required field: country'
                 })
                 continue
@@ -279,7 +276,6 @@ def bulk_import_customers():
             if not validate_email_format(email):
                 failed_rows.append({
                     'line': line_num,
-                    'data': row,
                     'reason': 'Invalid email format'
                 })
                 continue
@@ -288,7 +284,6 @@ def bulk_import_customers():
             if not validate_country_code(country):
                 failed_rows.append({
                     'line': line_num,
-                    'data': row,
                     'reason': 'Invalid country code (must be ISO 3166-1 alpha-2)'
                 })
                 continue
@@ -298,39 +293,41 @@ def bulk_import_customers():
             if existing_customer:
                 failed_rows.append({
                     'line': line_num,
-                    'data': row,
                     'reason': 'Customer with this email already exists'
                 })
                 continue
             
             # Create customer
             try:
-                customer = Customer(
-                    name=name,
-                    email=email,
-                    country=country.upper(),
-                    kyc_status='Pending'
-                )
-                
-                db.session.add(customer)
-                db.session.flush()  # Get the ID without committing
-                
-                # Log the creation
-                audit_logger.log_event(
-                    action='CREATE',
-                    user='system',
-                    customer_id=customer.id,
-                    before_state=None,
-                    after_state=customer.to_dict(),
-                    metadata={'source': 'bulk_import', 'line_number': line_num}
-                )
-                
-                successful_imports += 1
+                # Use a nested transaction (savepoint) for each row
+                # This allows us to rollback individual rows without affecting others
+                with db.session.begin_nested():
+                    customer = Customer(
+                        name=name,
+                        email=email,
+                        country=country.upper(),
+                        kyc_status='Pending'
+                    )
+                    
+                    db.session.add(customer)
+                    db.session.flush()  # Get the ID and detect any DB errors
+                    
+                    # Log the creation
+                    audit_logger.log_event(
+                        action='CREATE',
+                        user='system',
+                        customer_id=customer.id,
+                        before_state=None,
+                        after_state=customer.to_dict(),
+                        metadata={'source': 'bulk_import', 'line_number': line_num}
+                    )
+                    
+                    successful_imports += 1
             except Exception as e:
-                db.session.rollback()
+                # Nested transaction automatically rolled back on exception
+                # Other successful imports remain intact
                 failed_rows.append({
                     'line': line_num,
-                    'data': row,
                     'reason': f'Database error: {str(e)}'
                 })
         
